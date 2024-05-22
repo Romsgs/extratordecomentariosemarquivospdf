@@ -51,14 +51,11 @@ def organize_comments(documento_cliente, documento_blossom, comments):
     }
     return pd.DataFrame(data)
 
-def save_to_excel(tables, filename):
+def save_to_excel(tables: pd.DataFrame, filename):
     with BytesIO() as buffer:
-        with pd.ExcelWriter(buffer) as writer:
-            for i, table in enumerate(tables):
-                table.to_excel(writer, index=False, sheet_name=f"Tabela {i+1}")
-            writer.save()
+        tables.to_excel(filename)
         st.download_button(label="Download Excel", data=buffer.getvalue(), file_name=f"{filename}.xlsx")
-
+        
 uploaded_files = st.file_uploader("Faça o upload de arquivos", type=['pdf', 'dwg'], accept_multiple_files=True)
 
 if uploaded_files:
