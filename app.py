@@ -12,9 +12,11 @@ def extract_comments_and_header_from_pdf(pdf_file):
     text = paginaCabecalho.get_text()
 
     numero_documento_blossom  = re.search(r'\bBL\d{4}-\d{4}-\w{2}-\w{3}-\d{4}\b', text)
+    revisao_documento_cliente = re.search(r'Rev\.\s*([A-Z0-9])', text)
     numero_documento_cliente  = re.search(r'\b\w{3}-\w{2}-\d{4}-\w-\d{5}-\d{4}\b', text)
 
     numero_documento_cliente = numero_documento_cliente.group() if numero_documento_cliente else "Não encontrado"
+    revisao_documento_cliente = revisao_documento_cliente.group(1) if revisao_documento_cliente else "Não encontrado"
     numero_documento_blossom = numero_documento_blossom.group() if numero_documento_blossom else "Não encontrado"
 
     for page_num in range(len(doc)):
@@ -25,12 +27,13 @@ def extract_comments_and_header_from_pdf(pdf_file):
                 if annot.info["content"]:
                     comments.append(annot.info["content"])
 
-    return numero_documento_cliente, numero_documento_blossom, comments
+    return numero_documento_cliente, revisao_documento_cliente, numero_documento_blossom, comments
 
 # Função para organizar os comentários na estrutura necessária
-def organize_comments(documento_cliente,  documento_blossom, comments):
+def organize_comments(documento_cliente, revisao_documento, documento_blossom, comments):
     data = {
         "Número do Documento do Cliente": [documento_cliente] * len(comments),
+        "Revisão do Documento do Cliente": [revisao_documento] * len(comments),
         "Número do Documento da Blossom": [documento_blossom] * len(comments),
         "Comentário": comments
     }
@@ -44,15 +47,16 @@ uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
 
 if uploaded_file is not None:
     # Extrair dados do cabeçalho e comentários
-    numero_documento_cliente,  numero_documento_blossom, comments = extract_comments_and_header_from_pdf(uploaded_file)
+    numero_documento_cliente, revisao_documento_cliente, numero_documento_blossom, comments = extract_comments_and_header_from_pdf(uploaded_file)
 
     st.write("Número do Documento do Cliente:", numero_documento_cliente)
+    st.write("Revisão do Documento do Cliente:", revisao_documento_cliente)
     st.write("Número do Documento da Blossom:", numero_documento_blossom)
 
     if comments:
         
         # Organizar os comentários na estrutura necessária
-        comments_df = organize_comments(numero_documento_cliente,  numero_documento_blossom, comments)
+        comments_df = organize_comments(numero_documento_cliente, revisao_documento_cliente, numero_documento_blossom, comments)
         # Salvar os comentários em um arquivo Excel
         excel_output = BytesIO()
         
