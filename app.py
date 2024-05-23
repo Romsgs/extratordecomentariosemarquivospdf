@@ -7,7 +7,7 @@ from datetime import datetime
 st.set_page_config(page_title="Extração de Comentários")
 
 def extract_revisoes_table(text):
-    revisions_start = re.search(r'Revisões:', text)
+    revisions_start = re.search(r'\bRev', text)
     if not revisions_start:
         return pd.DataFrame()
 
@@ -39,7 +39,15 @@ def extract_comments_from_pdf(pdf_file):
         if annotations:
             for annot in annotations:
                 if annot.info["content"]:
-                    comments.append(annot.info["content"])
+                    if numero_documento_blossom == "Não encontrado" and re.search(r'\bBL\d{4}-\d{4}-\w{2}-\w{3}-\d{4}\b', annot.info["content"]):
+                        numero_documento_blossom = annot.info["content"]
+                    if numero_documento_cliente == "Não encontrado" and re.search(r'(\b\w{3}-\w{2}-\d{4}-\w-\d{5}-\d{4})|(\b\w{3}-\w-\d{6}-\d{3})',annot.info["content"]):
+                        numero_documento_cliente = annot.info["content"]
+                    if len(annot.info["content"]) >3:
+                        confiavel = True
+                    else:
+                        confiavel = False
+                    comments.append((annot.info["content"], confiavel))
 
     return numero_documento_cliente, numero_documento_blossom, comments, df_revisoes
 
@@ -47,7 +55,8 @@ def organize_comments(documento_cliente, documento_blossom, comments):
     data = {
         "Número do Documento do Cliente": [documento_cliente] * len(comments),
         "Número do Documento da Blossom": [documento_blossom] * len(comments),
-        "Comentário": comments
+        "Comentário": [x[0] for x in comments],
+        "confiavel": [x[1] for x in comments]
     }
     return pd.DataFrame(data)
 
@@ -57,7 +66,8 @@ def save_to_excel(tables, filename):
             for i, table in enumerate(tables):
                 table.to_excel(writer, index=False, sheet_name=f"Tabela {i+1}")
         st.download_button(label="Download Excel", data=buffer.getvalue(), file_name=f"{filename}.xlsx")
-
+        
+# inicio do streamlit
 uploaded_files = st.file_uploader("Faça o upload de arquivos", type=['pdf', 'dwg'], accept_multiple_files=True)
 
 if uploaded_files:
